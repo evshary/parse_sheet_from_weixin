@@ -1,4 +1,5 @@
 use std::fs;
+use scraper::{Html, Selector};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -8,7 +9,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Parse URL: {}", url);
         let resp = reqwest::get(url).await?;
         let text = resp.text().await?;
-        println!("{}", text);
+        //println!("{}", text);
+        let document = Html::parse_document(&text);
+        let selector = Selector::parse("h1").unwrap();
+        for title in document.select(&selector) {
+            let mut title = title.inner_html();
+            title.retain(|c| !"\t\r\n".contains(c));
+            let splits = title.trim().split('|').collect::<Vec<&str>>();
+            let title = String::from(splits[1]) + " - " + splits[0];
+            println!("{}", title);
+        }
     }
     Ok(())
 }
