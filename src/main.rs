@@ -53,6 +53,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Video URL: https://v.qq.com/x/page/{}.html", &vid[1]);
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
+        let selector = Selector::parse("img").unwrap();
+        let imgs = document.select(&selector).filter(|x| {
+            x.value()
+                .attr("class")
+                .unwrap_or_default()
+                .contains("js_insertlocalimg")
+        });
+        for (idx, img) in imgs.enumerate() {
+            println!("Idx: {}", idx);
+            println!("Image url: {}", img.value().attr("data-src").unwrap());
+        }
     }
     Ok(())
 }
