@@ -1,6 +1,7 @@
 use log::info;
 use regex::Regex;
 use scraper::{Html, Selector};
+use std::io;
 use std::{
     fs::{self, File},
     io::Write,
@@ -80,15 +81,36 @@ impl Sheet {
             sheets,
         }
     }
-    fn download(self) {
+    async fn download(self) {
         // Create folder
         fs::create_dir(self.title.as_str()).unwrap();
+
         // Create url.txt
-        let mut file = File::create(self.title.clone() + "/url.txt").unwrap();
-        file.write_all(self.url.as_bytes()).unwrap();
+        let mut file =
+            File::create(self.title.clone() + "/url.txt").expect("Failed to create file");
+        file.write_all(self.url.as_bytes())
+            .expect("Failed to create url.txt");
+
         // Download accompaniment
+        let resp = reqwest::get(self.accompaniment)
+            .await
+            .expect("Request failed");
+        let binary = resp.text().await.expect("Invalid body");
+        let mut file =
+            File::create(self.title.clone() + "/伴奏.mp3").expect("Failed to create 伴奏");
+        io::copy(&mut binary.as_bytes(), &mut file).expect("Failed to create 伴奏");
+
         // Download video
+        info!("TODO: Download vidoe {}", self.video);
+
         // Download sheet
+        for (idx, sheet) in self.sheets.into_iter().enumerate() {
+            let resp = reqwest::get(sheet).await.expect("Request failed");
+            let binary = resp.text().await.expect("Invalid body");
+            let mut file = File::create(format!("{}/{}.png", self.title.clone(), idx))
+                .expect("Failed to create sheet");
+            io::copy(&mut binary.as_bytes(), &mut file).expect("Failed to create sheet");
+        }
     }
 }
 
@@ -101,7 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let resp = reqwest::get(url).await?;
         let html = resp.text().await?;
         let sheet = Sheet::new(url.to_string(), html);
-        sheet.download();
+        sheet.download().await;
     }
     Ok(())
 }
