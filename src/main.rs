@@ -1,6 +1,6 @@
 use log::info;
 use regex::Regex;
-use scraper::{Html, Selector};
+use scraper::{ElementRef, Html, Selector};
 use std::{
     fs::{self, File},
     io::Write,
@@ -105,8 +105,19 @@ impl Sheet {
 
         // Download video
         {
-            // TODO: Get the video title
-            // Send request to https://vvideo.vip/video-parse.php?url=<URL>
+            // Get the video title
+            let resp = reqwest::get(&self.video).await.expect("Request failed");
+            let html = resp.text().await.expect("Invalid body");
+            let document = Html::parse_document(&html);
+            let selector = Selector::parse("meta").unwrap();
+            let title = document
+                .select(&selector)
+                .filter(|x| x.value().attr("name").unwrap_or_default() == "description")
+                .collect::<Vec<ElementRef>>()[0]
+                .value()
+                .attr("content")
+                .unwrap();
+            // Download video: Send request to https://vvideo.vip/video-parse.php?url=<URL>
             let parse_url = format!("https://vvideo.vip/video-parse.php?url={}", self.video);
             let resp = reqwest::get(parse_url).await.expect("Request failed");
             let text = resp.text().await.expect("Invalid body");
@@ -115,8 +126,8 @@ impl Sheet {
                 .await
                 .expect("Request failed");
             let binary = resp.bytes().await.expect("Invalid body");
-            let mut file =
-                File::create(self.title.clone() + "/影片.mp4").expect("Failed to create video");
+            let mut file = File::create(format!("{}/{}.mp4", self.title.clone(), title))
+                .expect("Failed to create video");
             file.write_all(&binary).expect("Failed to create video");
         }
 
