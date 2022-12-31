@@ -20,7 +20,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         title.retain(|c| !"\t\r\n".contains(c));
         let splits = title.trim().split('|').collect::<Vec<&str>>();
         let title = String::from(splits[1]) + " - " + splits[0];
-        println!("{}", title);
+        println!("Title: {}", title);
+
+        // Get the accompaniment
+        let selector = Selector::parse("mpvoice").unwrap();
+        let voice_id = document
+            .select(&selector)
+            .nth(0)
+            .unwrap()
+            .value()
+            .attr("voice_encode_fileid")
+            .unwrap();
+        println!(
+            "Voice URL: https://res.wx.qq.com/voice/getvoice?mediaid={}",
+            voice_id
+        );
+        // Get the url of video
+        // Get the music sheet
     }
     Ok(())
 }
