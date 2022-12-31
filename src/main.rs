@@ -1,16 +1,19 @@
+use log::info;
 use regex::Regex;
 use scraper::{Html, Selector};
 use std::fs;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    pretty_env_logger::init();
     let file_content = fs::read_to_string("urls.txt")?;
     let urls = file_content.split('\n');
     for url in urls {
-        println!("Parse URL: {}", url);
+        info!("Parse URL: {}", url);
         let resp = reqwest::get(url).await?;
         let text = resp.text().await?;
         let document = Html::parse_document(&text);
+
         // Get the title
         // Get the inner_html under h1
         let selector = Selector::parse("h1").unwrap();
@@ -22,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         title.retain(|c| !"\t\r\n".contains(c));
         let splits = title.trim().split('|').collect::<Vec<&str>>();
         let title = String::from(splits[1]) + " - " + splits[0];
-        println!("Title: {}", title);
+        info!("Title: {}", title);
 
         // Get the accompaniment
         // Get the attr voice_encode_fileid of mpvoice
@@ -34,10 +37,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .value()
             .attr("voice_encode_fileid")
             .unwrap();
-        println!(
+        info!(
             "Voice URL: https://res.wx.qq.com/voice/getvoice?mediaid={}",
             voice_id
         );
+
         // Get the url of video
         // Get the attr data-src of iframe
         let selector = Selector::parse("iframe").unwrap();
@@ -50,7 +54,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap();
         let re = Regex::new(r"vid=([[:alnum:]]+)").unwrap();
         let vid = re.captures(qq_url).unwrap();
-        println!("Video URL: https://v.qq.com/x/page/{}.html", &vid[1]);
+        info!("Video URL: https://v.qq.com/x/page/{}.html", &vid[1]);
+
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
         let selector = Selector::parse("img").unwrap();
@@ -61,8 +66,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .contains("js_insertlocalimg")
         });
         for (idx, img) in imgs.enumerate() {
-            println!("Idx: {}", idx);
-            println!("Image url: {}", img.value().attr("data-src").unwrap());
+            info!("Idx: {}", idx);
+            info!("Image url: {}", img.value().attr("data-src").unwrap());
         }
     }
     Ok(())

@@ -7,6 +7,9 @@ The program can parse the music sheet from weixin.
 * Create `urls.txt` and put urls into it
 * Run
 
-```rust
+```shell
 cargo run
+# debug
+RUST_LOG=info cargo run
 ```
+
