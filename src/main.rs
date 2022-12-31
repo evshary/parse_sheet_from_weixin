@@ -84,11 +84,13 @@ impl Sheet {
     }
     async fn download(self) {
         // Create folder
+        info!("Creating folder...");
         let path = format!("{}/{}", OUTPUT, self.title.as_str());
         fs::create_dir_all(&path).unwrap();
 
         // Create url.txt
         {
+            info!("Creating url.txt...");
             let mut file =
                 File::create(format!("{}/url.txt", path)).expect("Failed to create file");
             file.write_all(self.url.as_bytes())
@@ -97,6 +99,7 @@ impl Sheet {
 
         // Download accompaniment
         {
+            info!("Dowloading accompaniment...");
             let resp = reqwest::get(self.accompaniment)
                 .await
                 .expect("Request failed");
@@ -108,6 +111,7 @@ impl Sheet {
 
         // Download video
         {
+            info!("Dowloading video...");
             // Get the video title
             let resp = reqwest::get(&self.video).await.expect("Request failed");
             let html = resp.text().await.expect("Invalid body");
@@ -135,13 +139,19 @@ impl Sheet {
         }
 
         // Download sheet
-        for (idx, sheet) in self.sheets.into_iter().enumerate() {
-            let resp = reqwest::get(sheet).await.expect("Request failed");
-            let binary = resp.bytes().await.expect("Invalid body");
-            let mut file =
-                File::create(format!("{}/{}.png", path, idx + 1)).expect("Failed to create sheet");
-            file.write_all(&binary).expect("Failed to create 伴奏");
+        {
+            info!("Dowloading sheets...");
+            for (idx, sheet) in self.sheets.into_iter().enumerate() {
+                let resp = reqwest::get(sheet).await.expect("Request failed");
+                let binary = resp.bytes().await.expect("Invalid body");
+                let mut file = File::create(format!("{}/{}.png", path, idx + 1))
+                    .expect("Failed to create sheet");
+                file.write_all(&binary).expect("Failed to create 伴奏");
+            }
         }
+
+        // Add newline
+        info!("-----------------------------------------------------------------------------------------------");
     }
 }
 
