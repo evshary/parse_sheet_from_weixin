@@ -3,17 +3,18 @@ use regex::Regex;
 use scraper::{Html, Selector};
 use std::fs;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    pretty_env_logger::init();
-    let file_content = fs::read_to_string("urls.txt")?;
-    let urls = file_content.split('\n');
-    for url in urls {
-        info!("Parse URL: {}", url);
-        let resp = reqwest::get(url).await?;
-        let text = resp.text().await?;
-        let document = Html::parse_document(&text);
+struct Sheet {
+    url: String,
+    title: String,
+    accompaniment: String,
+    video: String,
+    sheets: Vec<String>,
+}
 
+impl Sheet {
+    fn new(url: String, html: String) -> Sheet {
+        info!("Parse URL: {}", url);
+        let document = Html::parse_document(&html);
         // Get the title
         // Get the inner_html under h1
         let selector = Selector::parse("h1").unwrap();
@@ -37,10 +38,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .value()
             .attr("voice_encode_fileid")
             .unwrap();
-        info!(
-            "Voice URL: https://res.wx.qq.com/voice/getvoice?mediaid={}",
-            voice_id
-        );
+        let accompaniment = format!("https://res.wx.qq.com/voice/getvoice?mediaid={}", voice_id);
+        info!("Voice URL: {}", accompaniment);
 
         // Get the url of video
         // Get the attr data-src of iframe
@@ -54,7 +53,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap();
         let re = Regex::new(r"vid=([[:alnum:]]+)").unwrap();
         let vid = re.captures(qq_url).unwrap();
-        info!("Video URL: https://v.qq.com/x/page/{}.html", &vid[1]);
+        let video = format!("https://v.qq.com/x/page/{}.html", &vid[1]);
+        info!("Video URL: {}", video);
 
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
@@ -65,10 +65,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap_or_default()
                 .contains("js_insertlocalimg")
         });
-        for (idx, img) in imgs.enumerate() {
-            info!("Idx: {}", idx);
-            info!("Image url: {}", img.value().attr("data-src").unwrap());
+        let sheets = imgs
+            .map(|img| img.value().attr("data-src").unwrap().to_string())
+            .collect::<Vec<String>>();
+        info!("{:?}", sheets);
+        Sheet {
+            url,
+            title,
+            accompaniment,
+            video,
+            sheets,
         }
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    pretty_env_logger::init();
+    let file_content = fs::read_to_string("urls.txt")?;
+    let urls = file_content.split('\n');
+    for url in urls {
+        let resp = reqwest::get(url).await?;
+        let html = resp.text().await?;
+        let _sheet = Sheet::new(url.to_string(), html);
     }
     Ok(())
 }
