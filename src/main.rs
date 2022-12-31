@@ -1,7 +1,10 @@
 use log::info;
 use regex::Regex;
 use scraper::{Html, Selector};
-use std::fs;
+use std::{
+    fs::{self, File},
+    io::Write,
+};
 
 struct Sheet {
     url: String,
@@ -77,6 +80,16 @@ impl Sheet {
             sheets,
         }
     }
+    fn download(self) {
+        // Create folder
+        fs::create_dir(self.title.as_str()).unwrap();
+        // Create url.txt
+        let mut file = File::create(self.title.clone() + "/url.txt").unwrap();
+        file.write_all(self.url.as_bytes()).unwrap();
+        // Download accompaniment
+        // Download video
+        // Download sheet
+    }
 }
 
 #[tokio::main]
@@ -87,7 +100,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for url in urls {
         let resp = reqwest::get(url).await?;
         let html = resp.text().await?;
-        let _sheet = Sheet::new(url.to_string(), html);
+        let sheet = Sheet::new(url.to_string(), html);
+        sheet.download();
     }
     Ok(())
 }
