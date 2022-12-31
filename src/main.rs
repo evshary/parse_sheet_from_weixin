@@ -12,6 +12,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let text = resp.text().await?;
         let document = Html::parse_document(&text);
         // Get the title
+        // Get the inner_html under h1
         let selector = Selector::parse("h1").unwrap();
         let mut title = document
             .select(&selector)
@@ -24,6 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Title: {}", title);
 
         // Get the accompaniment
+        // Get the attr voice_encode_fileid of mpvoice
         let selector = Selector::parse("mpvoice").unwrap();
         let voice_id = document
             .select(&selector)
@@ -37,6 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             voice_id
         );
         // Get the url of video
+        // Get the attr data-src of iframe
         let selector = Selector::parse("iframe").unwrap();
         let qq_url = document
             .select(&selector)
@@ -49,6 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let vid = re.captures(qq_url).unwrap();
         println!("Video URL: https://v.qq.com/x/page/{}.html", &vid[1]);
         // Get the music sheet
+        // Get the attr data-src of img with class js_insertlocalimg
     }
     Ok(())
 }
