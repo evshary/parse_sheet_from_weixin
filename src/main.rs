@@ -6,6 +6,8 @@ use std::{
     io::Write,
 };
 
+const OUTPUT: &str = "output";
+
 struct Sheet {
     url: String,
     title: String,
@@ -82,12 +84,13 @@ impl Sheet {
     }
     async fn download(self) {
         // Create folder
-        fs::create_dir(self.title.as_str()).unwrap();
+        let path = format!("{}/{}", OUTPUT, self.title.as_str());
+        fs::create_dir_all(&path).unwrap();
 
         // Create url.txt
         {
             let mut file =
-                File::create(self.title.clone() + "/url.txt").expect("Failed to create file");
+                File::create(format!("{}/url.txt", path)).expect("Failed to create file");
             file.write_all(self.url.as_bytes())
                 .expect("Failed to create url.txt");
         }
@@ -99,7 +102,7 @@ impl Sheet {
                 .expect("Request failed");
             let binary = resp.bytes().await.expect("Invalid body");
             let mut file =
-                File::create(self.title.clone() + "/伴奏.mp3").expect("Failed to create 伴奏");
+                File::create(format!("{}/伴奏.mp3", path)).expect("Failed to create 伴奏");
             file.write_all(&binary).expect("Failed to create 伴奏");
         }
 
@@ -126,8 +129,8 @@ impl Sheet {
                 .await
                 .expect("Request failed");
             let binary = resp.bytes().await.expect("Invalid body");
-            let mut file = File::create(format!("{}/{}.mp4", self.title.clone(), title))
-                .expect("Failed to create video");
+            let mut file =
+                File::create(format!("{}/{}.mp4", path, title)).expect("Failed to create video");
             file.write_all(&binary).expect("Failed to create video");
         }
 
@@ -135,8 +138,8 @@ impl Sheet {
         for (idx, sheet) in self.sheets.into_iter().enumerate() {
             let resp = reqwest::get(sheet).await.expect("Request failed");
             let binary = resp.bytes().await.expect("Invalid body");
-            let mut file = File::create(format!("{}/{}.png", self.title.clone(), idx + 1))
-                .expect("Failed to create sheet");
+            let mut file =
+                File::create(format!("{}/{}.png", path, idx + 1)).expect("Failed to create sheet");
             file.write_all(&binary).expect("Failed to create 伴奏");
         }
     }
