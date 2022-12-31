@@ -1,3 +1,4 @@
+use regex::Regex;
 use scraper::{Html, Selector};
 use std::fs;
 
@@ -36,6 +37,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             voice_id
         );
         // Get the url of video
+        let selector = Selector::parse("iframe").unwrap();
+        let qq_url = document
+            .select(&selector)
+            .nth(0)
+            .unwrap()
+            .value()
+            .attr("data-src")
+            .unwrap();
+        let re = Regex::new(r"vid=([[:alnum:]]+)").unwrap();
+        let vid = re.captures(qq_url).unwrap();
+        println!("Video URL: https://v.qq.com/x/page/{}.html", &vid[1]);
         // Get the music sheet
     }
     Ok(())
