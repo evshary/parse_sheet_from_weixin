@@ -124,14 +124,39 @@ impl Sheet {
                 .value()
                 .attr("content")
                 .unwrap();
-            // Download video: Send request to https://vvideo.vip/video-parse.php?url=<URL>
-            let parse_url = format!("https://vvideo.vip/video-parse.php?url={}", self.video);
-            let resp = reqwest::get(parse_url).await.expect("Request failed");
-            let text = resp.text().await.expect("Invalid body");
-            let json_data = json::parse(&text).expect("Unable to parse json");
-            let resp = reqwest::get(json_data["data"][0]["url"].to_string())
+            // Download video: Send request to http://www.weibodang.cn/videoextractor/extract.php
+            let parse_url = String::from("http://www.weibodang.cn/videoextractor/extract.php");
+            let params = [
+                (
+                    "csrfmiddlewaretoken",
+                    "2D7YysIrxAkqAlucG5CBY6Kou7pSWP7WpucCPG2SiH4mL1lVezNVG2nSSZYNRDmx",
+                ),
+                ("q", &self.video),
+                (
+                    "check",
+                    "%C2%A0%C2%A0%C2%A0Find+Video+Link%C2%A0%C2%A0%C2%A0",
+                ),
+            ];
+            let cookie = String::from("lang=eng; csrftoken=pEv2hlb0riSLHGFvfhNUHodIToTi9rXcMvAGyzvrcpCHSmweNLYepkQchgsd4fcN; Hm_lvt_9918e92916590d12525d5fc1be3d1d5f=1675578695; Hm_lpvt_9918e92916590d12525d5fc1be3d1d5f=1675585799");
+            let client = reqwest::Client::new();
+            let resp = client
+                .post(parse_url)
+                .header(reqwest::header::COOKIE, cookie)
+                .form(&params)
+                .send()
                 .await
                 .expect("Request failed");
+            let html = resp.text().await.expect("Invalid body");
+            let document = Html::parse_document(&html);
+            let selector = Selector::parse("video").unwrap();
+            let video_url = document
+                .select(&selector)
+                .nth(0) // Get first element
+                .unwrap()
+                .value()
+                .attr("src")
+                .unwrap();
+            let resp = reqwest::get(video_url).await.expect("Request failed");
             let binary = resp.bytes().await.expect("Invalid body");
             let mut file =
                 File::create(format!("{}/{}.mp4", path, title)).expect("Failed to create video");
