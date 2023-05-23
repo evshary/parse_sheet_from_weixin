@@ -171,7 +171,7 @@ impl Sheet {
                 let binary = resp.bytes().await.expect("Invalid body");
                 let mut file = File::create(format!("{}/{}.png", path, idx + 1))
                     .expect("Failed to create sheet");
-                file.write_all(&binary).expect("Failed to create 伴奏");
+                file.write_all(&binary).expect("Failed to create sheets");
             }
         }
 
