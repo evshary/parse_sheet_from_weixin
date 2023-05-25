@@ -1,6 +1,6 @@
 use log::info;
 use regex::Regex;
-use scraper::{ElementRef, Html, Selector};
+use scraper::{Html, Selector};
 use std::time::Duration;
 use std::{
     fs::{self, File},
@@ -85,29 +85,26 @@ impl Sheet {
         }
     }
 
-    async fn download_video(&self, url: &str, path: &str) -> WebDriverResult<()> {
-        // Get the video title
-        let resp = reqwest::get(&self.video).await.expect("Request failed");
-        let html = resp.text().await.expect("Invalid body");
-        let document = Html::parse_document(&html);
-        let selector = Selector::parse("meta").unwrap();
-        let title = document
-            .select(&selector)
-            .filter(|x| x.value().attr("name").unwrap_or_default() == "description")
-            .collect::<Vec<ElementRef>>()[0]
-            .value()
-            .attr("content")
-            .unwrap();
-        // Download video: Send request via selenium
+    async fn download_video(&self, url: &str, path: &str, timeout: u64) -> WebDriverResult<()> {
+        // Send request via selenium
         let caps = DesiredCapabilities::chrome();
         let driver = WebDriver::new("http://localhost:9515", caps).await?;
-        driver.set_page_load_timeout(Duration::new(30, 0)).await?;
+        driver
+            .set_page_load_timeout(Duration::new(timeout, 0))
+            .await?;
         match driver.goto(url).await {
             _ => {}
         }
-        //print!("{}", driver.source().await?);
         let html = driver.source().await?;
         let document = Html::parse_document(&html);
+        // Get the video title
+        let selector = Selector::parse("title").unwrap();
+        let title = document
+            .select(&selector)
+            .nth(0) // Get first element
+            .unwrap()
+            .inner_html();
+        // Get video url
         let selector = Selector::parse("video").unwrap();
         let video_url = document
             .select(&selector)
@@ -156,7 +153,7 @@ impl Sheet {
         // Download video
         {
             info!("Dowloading video...");
-            self.download_video(&self.video, &path)
+            self.download_video(&self.video, &path, 30)
                 .await
                 .expect("selenium failed");
         }
