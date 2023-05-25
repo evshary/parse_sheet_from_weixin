@@ -1,10 +1,12 @@
 use log::info;
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
+use std::time::Duration;
 use std::{
     fs::{self, File},
     io::Write,
 };
+use thirtyfour::prelude::*;
 
 const OUTPUT: &str = "output";
 
@@ -82,7 +84,49 @@ impl Sheet {
             sheets,
         }
     }
-    async fn download(self) {
+
+    async fn download_video(&self, url: &str, path: &str) -> WebDriverResult<()> {
+        // Get the video title
+        let resp = reqwest::get(&self.video).await.expect("Request failed");
+        let html = resp.text().await.expect("Invalid body");
+        let document = Html::parse_document(&html);
+        let selector = Selector::parse("meta").unwrap();
+        let title = document
+            .select(&selector)
+            .filter(|x| x.value().attr("name").unwrap_or_default() == "description")
+            .collect::<Vec<ElementRef>>()[0]
+            .value()
+            .attr("content")
+            .unwrap();
+        // Download video: Send request via selenium
+        let caps = DesiredCapabilities::chrome();
+        let driver = WebDriver::new("http://localhost:9515", caps).await?;
+        driver.set_page_load_timeout(Duration::new(30, 0)).await?;
+        match driver.goto(url).await {
+            _ => {}
+        }
+        //print!("{}", driver.source().await?);
+        let html = driver.source().await?;
+        let document = Html::parse_document(&html);
+        let selector = Selector::parse("video").unwrap();
+        let video_url = document
+            .select(&selector)
+            .nth(0) // Get first element
+            .unwrap()
+            .value()
+            .attr("src")
+            .unwrap();
+        // Download video as a file
+        let resp = reqwest::get(video_url).await.expect("Request failed");
+        let binary = resp.bytes().await.expect("Invalid body");
+        let mut file =
+            File::create(format!("{}/{}.mp4", path, title)).expect("Failed to create video");
+        file.write_all(&binary).expect("Failed to create video");
+        driver.quit().await?;
+        Ok(())
+    }
+
+    async fn download(&self) {
         // Create folder
         info!("Creating folder...");
         let path = format!("{}/{}", OUTPUT, self.title.as_str());
@@ -100,7 +144,7 @@ impl Sheet {
         // Download accompaniment
         {
             info!("Dowloading accompaniment...");
-            let resp = reqwest::get(self.accompaniment)
+            let resp = reqwest::get(self.accompaniment.clone())
                 .await
                 .expect("Request failed");
             let binary = resp.bytes().await.expect("Invalid body");
@@ -112,61 +156,15 @@ impl Sheet {
         // Download video
         {
             info!("Dowloading video...");
-            // Get the video title
-            let resp = reqwest::get(&self.video).await.expect("Request failed");
-            let html = resp.text().await.expect("Invalid body");
-            let document = Html::parse_document(&html);
-            let selector = Selector::parse("meta").unwrap();
-            let title = document
-                .select(&selector)
-                .filter(|x| x.value().attr("name").unwrap_or_default() == "description")
-                .collect::<Vec<ElementRef>>()[0]
-                .value()
-                .attr("content")
-                .unwrap();
-            // Download video: Send request to http://www.weibodang.cn/videoextractor/extract.php
-            let parse_url = String::from("http://www.weibodang.cn/videoextractor/extract.php");
-            let params = [
-                (
-                    "csrfmiddlewaretoken",
-                    "2D7YysIrxAkqAlucG5CBY6Kou7pSWP7WpucCPG2SiH4mL1lVezNVG2nSSZYNRDmx",
-                ),
-                ("q", &self.video),
-                (
-                    "check",
-                    "%C2%A0%C2%A0%C2%A0Find+Video+Link%C2%A0%C2%A0%C2%A0",
-                ),
-            ];
-            let cookie = String::from("lang=eng; csrftoken=pEv2hlb0riSLHGFvfhNUHodIToTi9rXcMvAGyzvrcpCHSmweNLYepkQchgsd4fcN; Hm_lvt_9918e92916590d12525d5fc1be3d1d5f=1675578695; Hm_lpvt_9918e92916590d12525d5fc1be3d1d5f=1675585799");
-            let client = reqwest::Client::new();
-            let resp = client
-                .post(parse_url)
-                .header(reqwest::header::COOKIE, cookie)
-                .form(&params)
-                .send()
+            self.download_video(&self.video, &path)
                 .await
-                .expect("Request failed");
-            let html = resp.text().await.expect("Invalid body");
-            let document = Html::parse_document(&html);
-            let selector = Selector::parse("video").unwrap();
-            let video_url = document
-                .select(&selector)
-                .nth(0) // Get first element
-                .unwrap()
-                .value()
-                .attr("src")
-                .unwrap();
-            let resp = reqwest::get(video_url).await.expect("Request failed");
-            let binary = resp.bytes().await.expect("Invalid body");
-            let mut file =
-                File::create(format!("{}/{}.mp4", path, title)).expect("Failed to create video");
-            file.write_all(&binary).expect("Failed to create video");
+                .expect("selenium failed");
         }
 
         // Download sheet
         {
             info!("Dowloading sheets...");
-            for (idx, sheet) in self.sheets.into_iter().enumerate() {
+            for (idx, sheet) in self.sheets.clone().into_iter().enumerate() {
                 let resp = reqwest::get(sheet).await.expect("Request failed");
                 let binary = resp.bytes().await.expect("Invalid body");
                 let mut file = File::create(format!("{}/{}.png", path, idx + 1))
