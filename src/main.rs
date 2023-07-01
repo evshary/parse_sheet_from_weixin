@@ -93,7 +93,11 @@ impl Sheet {
             .set_page_load_timeout(Duration::new(timeout, 0))
             .await?;
         match driver.goto(url).await {
-            _ => {}
+            Ok(_) => {}
+            Err(e) => {
+                info!("{:?}", e);
+                info!("You can ignore this meesage.")
+            }
         }
         let html = driver.source().await?;
         let document = Html::parse_document(&html);
