@@ -1,6 +1,7 @@
 use log::info;
 use regex::Regex;
 use scraper::{Html, Selector};
+use std::thread;
 use std::time::Duration;
 use std::{
     fs::{self, File},
@@ -37,7 +38,7 @@ impl Sheet {
 
         // Get the accompaniment
         // Get the attr voice_encode_fileid of mpvoice
-        let selector = Selector::parse("mpvoice").unwrap();
+        let selector = Selector::parse("mp-common-mpaudio").unwrap();
         let voice_id = document
             .select(&selector)
             .nth(0)
@@ -89,9 +90,10 @@ impl Sheet {
         // Send request via selenium
         let caps = DesiredCapabilities::chrome();
         let driver = WebDriver::new("http://localhost:9515", caps).await?;
-        driver
-            .set_page_load_timeout(Duration::new(timeout, 0))
-            .await?;
+        //driver
+        //    .set_implicit_wait_timeout(Duration::new(timeout, 0))
+        //    .await?;
+        //let timeouts = driver.get_timeouts().await?;
         match driver.goto(url).await {
             Ok(_) => {}
             Err(e) => {
@@ -99,6 +101,8 @@ impl Sheet {
                 info!("You can ignore this meesage.")
             }
         }
+        // Waiting for selenium
+        thread::sleep(Duration::new(timeout, 0));
         let html = driver.source().await?;
         let document = Html::parse_document(&html);
         // Get the video title
