@@ -212,7 +212,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pretty_env_logger::init();
     let file_content = std::fs::read_to_string("urls.txt")?;
     let urls = file_content.split('\n');
+    let mut failed_url = Vec::<&str>::new();
     for url in urls {
+        // Add newline to separate
+        log::info!("-----------------------------------------------------------------------------------------------");
         // Don't access the website too fast
         std::thread::sleep(std::time::Duration::new(5, 0));
         // Parse the resource
@@ -220,6 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(s) => s,
             Err(e) => {
                 log::warn!("Failed to parse sheet: {:?}", e);
+                failed_url.push(url);
                 continue;
             }
         };
@@ -228,11 +232,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(_) => {}
             Err(e) => {
                 log::warn!("Failed to download sheet: {:?}", e);
+                failed_url.push(url);
                 continue;
             }
         }
-        // Add newline to separate
-        log::info!("-----------------------------------------------------------------------------------------------");
+    }
+    log::info!("-----------------------------------------------------------------------------------------------");
+    if failed_url.len() != 0 {
+        log::warn!("Something wrong! Failure urls: {:?}", failed_url);
+    } else {
+        log::info!("Complete successfully!");
     }
     Ok(())
 }
