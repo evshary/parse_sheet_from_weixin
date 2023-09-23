@@ -1,10 +1,4 @@
-use scraper::{Html, Selector};
-use std::thread;
-use std::time::Duration;
-use std::{
-    fs::{self, File},
-    io::Write,
-};
+use std::io::Write;
 use thirtyfour::prelude::*;
 
 const OUTPUT: &str = "output";
@@ -23,11 +17,11 @@ impl Sheet {
         log::info!("The URL: {}", url);
         let resp = reqwest::get(url.clone()).await?;
         let html = resp.text().await?;
-        let document = Html::parse_document(&html);
+        let document = scraper::Html::parse_document(&html);
 
         // Get the title
         // Get the inner_html under h1
-        let selector = Selector::parse("h1")?;
+        let selector = scraper::Selector::parse("h1")?;
         let mut title = document
             .select(&selector)
             .nth(0) // Get first element
@@ -43,7 +37,7 @@ impl Sheet {
 
         // Get the accompaniment
         // Get the attr voice_encode_fileid of mpvoice
-        let selector = Selector::parse("mp-common-mpaudio")?;
+        let selector = scraper::Selector::parse("mp-common-mpaudio")?;
         let voice_id = document
             .select(&selector)
             .nth(0)
@@ -62,7 +56,7 @@ impl Sheet {
 
         // Get the url of video
         // Get the attr data-src of iframe
-        let selector = Selector::parse("iframe")?;
+        let selector = scraper::Selector::parse("iframe")?;
         let qq_url = document
             .select(&selector)
             .nth(0)
@@ -86,7 +80,7 @@ impl Sheet {
 
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
-        let selector = Selector::parse("img")?;
+        let selector = scraper::Selector::parse("img")?;
         let imgs = document.select(&selector).filter(|x| {
             x.value()
                 .attr("class")
@@ -133,11 +127,11 @@ impl Sheet {
             }
         }
         // Waiting for selenium
-        thread::sleep(Duration::new(timeout, 0));
+        std::thread::sleep(std::time::Duration::new(timeout, 0));
         let html = driver.source().await?;
-        let document = Html::parse_document(&html);
+        let document = scraper::Html::parse_document(&html);
         // Get the video title
-        let selector = Selector::parse("title")?;
+        let selector = scraper::Selector::parse("title")?;
         let title = document
             .select(&selector)
             .nth(0) // Get first element
@@ -148,7 +142,7 @@ impl Sheet {
             .inner_html();
         log::info!("Downloaded video title: {}", title);
         // Get video url
-        let selector = Selector::parse("video")?;
+        let selector = scraper::Selector::parse("video")?;
         let video_url = document
             .select(&selector)
             .nth(0) // Get first element
@@ -163,7 +157,7 @@ impl Sheet {
         // Download video as a file
         let resp = reqwest::get(video_url).await?;
         let binary = resp.bytes().await?;
-        let mut file = File::create(format!("{}/{}.mp4", path, title))?;
+        let mut file = std::fs::File::create(format!("{}/{}.mp4", path, title))?;
         file.write_all(&binary)?;
         driver.quit().await?;
         Ok(())
@@ -173,12 +167,12 @@ impl Sheet {
         // Create folder
         log::info!("Creating folder...");
         let path = format!("{}/{}", OUTPUT, self.title.as_str());
-        fs::create_dir_all(&path)?;
+        std::fs::create_dir_all(&path)?;
 
         // Create url.txt
         {
             log::info!("Creating url.txt...");
-            let mut file = File::create(format!("{}/url.txt", path))?;
+            let mut file = std::fs::File::create(format!("{}/url.txt", path))?;
             file.write_all(self.url.as_bytes())?;
         }
 
@@ -187,7 +181,7 @@ impl Sheet {
             log::info!("Dowloading accompaniment...");
             let resp = reqwest::get(self.accompaniment.clone()).await?;
             let binary = resp.bytes().await?;
-            let mut file = File::create(format!("{}/伴奏.mp3", path))?;
+            let mut file = std::fs::File::create(format!("{}/伴奏.mp3", path))?;
             file.write_all(&binary)?;
         }
 
@@ -204,7 +198,7 @@ impl Sheet {
             for (idx, sheet) in self.sheets.clone().into_iter().enumerate() {
                 let resp = reqwest::get(sheet).await?;
                 let binary = resp.bytes().await?;
-                let mut file = File::create(format!("{}/{}.png", path, idx + 1))?;
+                let mut file = std::fs::File::create(format!("{}/{}.png", path, idx + 1))?;
                 file.write_all(&binary)?;
             }
         }
@@ -216,11 +210,11 @@ impl Sheet {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pretty_env_logger::init();
-    let file_content = fs::read_to_string("urls.txt")?;
+    let file_content = std::fs::read_to_string("urls.txt")?;
     let urls = file_content.split('\n');
     for url in urls {
         // Don't access the website too fast
-        thread::sleep(Duration::new(5, 0));
+        std::thread::sleep(std::time::Duration::new(5, 0));
         // Parse the resource
         let sheet = match Sheet::try_new(url.to_string()).await {
             Ok(s) => s,
