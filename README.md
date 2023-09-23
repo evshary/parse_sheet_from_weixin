@@ -6,6 +6,7 @@ The program can parse the music sheet from weixin.
 
 * Install chromedriver
   - You can follow the tutorial here: [Run Selenium and Chrome on WSL2 using Python and Selenium webdriver](https://cloudbytes.dev/snippets/run-selenium-and-chrome-on-wsl2)
+  - Here is the latest chromedriver: https://googlechromelabs.github.io/chrome-for-testing/#stable
 * Create `urls.txt` and put urls into it
 * Run
 
