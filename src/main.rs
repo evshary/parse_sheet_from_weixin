@@ -169,10 +169,10 @@ impl Sheet {
         let path = format!("{}/{}", OUTPUT, self.title.as_str());
         std::fs::create_dir_all(&path)?;
 
-        // Create url.txt
+        // Create README
         {
-            log::info!("Creating url.txt...");
-            let mut file = std::fs::File::create(format!("{}/url.txt", path))?;
+            log::info!("Creating README...");
+            let mut file = std::fs::File::create(format!("{}/README", path))?;
             file.write_all(self.url.as_bytes())?;
         }
 
