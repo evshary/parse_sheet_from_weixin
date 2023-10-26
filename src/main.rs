@@ -1,3 +1,5 @@
+mod error;
+
 use std::io::Write;
 use thirtyfour::prelude::*;
 
@@ -12,7 +14,7 @@ struct Sheet {
 }
 
 impl Sheet {
-    async fn try_new(url: String) -> Result<Sheet, Box<dyn std::error::Error>> {
+    async fn try_new(url: String) -> anyhow::Result<Sheet> {
         // Get Html
         log::info!("The URL: {}", url);
         let resp = reqwest::get(url.clone()).await?;
@@ -21,7 +23,8 @@ impl Sheet {
 
         // Get the title
         // Get the inner_html under h1
-        let selector = scraper::Selector::parse("h1")?;
+        let selector =
+            scraper::Selector::parse("h1").map_err(|_| error::SheetError::ParseFailed)?;
         let mut title = document
             .select(&selector)
             .nth(0) // Get first element
@@ -37,7 +40,8 @@ impl Sheet {
 
         // Get the accompaniment
         // Get the attr voice_encode_fileid of mpvoice
-        let selector = scraper::Selector::parse("mp-common-mpaudio")?;
+        let selector = scraper::Selector::parse("mp-common-mpaudio")
+            .map_err(|_| error::SheetError::ParseFailed)?;
         let voice_id = document
             .select(&selector)
             .nth(0)
@@ -56,7 +60,8 @@ impl Sheet {
 
         // Get the url of video
         // Get the attr data-src of iframe
-        let selector = scraper::Selector::parse("iframe")?;
+        let selector =
+            scraper::Selector::parse("iframe").map_err(|_| error::SheetError::ParseFailed)?;
         let qq_url = document
             .select(&selector)
             .nth(0)
@@ -80,7 +85,8 @@ impl Sheet {
 
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
-        let selector = scraper::Selector::parse("img")?;
+        let selector =
+            scraper::Selector::parse("img").map_err(|_| error::SheetError::ParseFailed)?;
         let imgs = document.select(&selector).filter(|x| {
             x.value()
                 .attr("class")
@@ -106,12 +112,7 @@ impl Sheet {
         })
     }
 
-    async fn download_video(
-        &self,
-        url: &str,
-        path: &str,
-        timeout: u64,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn download_video(&self, url: &str, path: &str, timeout: u64) -> anyhow::Result<()> {
         // Send request via selenium
         let caps = DesiredCapabilities::chrome();
         let driver = WebDriver::new("http://localhost:9515", caps).await?;
@@ -131,7 +132,8 @@ impl Sheet {
         let html = driver.source().await?;
         let document = scraper::Html::parse_document(&html);
         // Get the video title
-        let selector = scraper::Selector::parse("title")?;
+        let selector =
+            scraper::Selector::parse("title").map_err(|_| error::SheetError::ParseFailed)?;
         let title = document
             .select(&selector)
             .nth(0) // Get first element
@@ -142,7 +144,8 @@ impl Sheet {
             .inner_html();
         log::info!("Downloaded video title: {}", title);
         // Get video url
-        let selector = scraper::Selector::parse("video")?;
+        let selector =
+            scraper::Selector::parse("video").map_err(|_| error::SheetError::ParseFailed)?;
         let video_url = document
             .select(&selector)
             .nth(0) // Get first element
@@ -163,7 +166,7 @@ impl Sheet {
         Ok(())
     }
 
-    async fn download(&self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn download(&self) -> anyhow::Result<()> {
         // Create folder
         log::info!("Creating folder...");
         let path = format!("{}/{}", OUTPUT, self.title.as_str());
@@ -208,7 +211,7 @@ impl Sheet {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
     let file_content = std::fs::read_to_string("urls.txt")?;
     let urls = file_content.split('\n');
