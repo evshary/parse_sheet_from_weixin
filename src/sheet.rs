@@ -167,13 +167,6 @@ impl Sheet {
             file.write_all(&binary)?;
         }
 
-        // Download video
-        {
-            log::info!("Dowloading video...");
-            // Timeout means we need to wait for ad play and load the video we want
-            self.download_video(&self.video, &path, 30).await?;
-        }
-
         // Download sheet
         {
             log::info!("Dowloading sheets...");
@@ -183,6 +176,13 @@ impl Sheet {
                 let mut file = std::fs::File::create(format!("{}/{}.png", path, idx + 1))?;
                 file.write_all(&binary)?;
             }
+        }
+
+        // Download video
+        {
+            log::info!("Dowloading video...");
+            // Timeout means we need to wait for ad play and load the video we want
+            self.download_video(&self.video, &path, 30).await?;
         }
 
         Ok(())
