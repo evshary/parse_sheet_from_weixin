@@ -25,10 +25,7 @@ impl Sheet {
         let mut title = document
             .select(&selector)
             .nth(0) // Get first element
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Unable to get title",
-            ))?
+            .ok_or(error::SheetError::GetFailed("sheet title".to_string()))?
             .inner_html();
         title.retain(|c| !"\t\r\n".contains(c));
         let splits = title.trim().split('|').collect::<Vec<&str>>();
@@ -42,15 +39,13 @@ impl Sheet {
         let voice_id = document
             .select(&selector)
             .nth(0)
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Unable to get accompaniment url",
+            .ok_or(error::SheetError::GetFailed(
+                "accompaniment url".to_string(),
             ))?
             .value()
             .attr("voice_encode_fileid")
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Unable to get accompaniment url",
+            .ok_or(error::SheetError::GetFailed(
+                "accompaniment url".to_string(),
             ))?;
         let accompaniment = format!("https://res.wx.qq.com/voice/getvoice?mediaid={}", voice_id);
         log::info!("Parsed voice URL: {}", accompaniment);
@@ -62,21 +57,14 @@ impl Sheet {
         let qq_url = document
             .select(&selector)
             .nth(0)
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Unable to get video url",
-            ))?
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?
             .value()
             .attr("data-src")
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Unable to get video url",
-            ))?;
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?;
         let re = regex::Regex::new(r"vid=([[:alnum:]]+)")?;
-        let vid = re.captures(qq_url).ok_or(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Unable to get video url",
-        ))?;
+        let vid = re
+            .captures(qq_url)
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?;
         let video = format!("https://v.qq.com/x/page/{}.html", &vid[1]);
         log::info!("Parsed QQ video URL: {}", video);
 
@@ -134,10 +122,7 @@ impl Sheet {
         let title = document
             .select(&selector)
             .nth(0) // Get first element
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Unable to get video title",
-            ))?
+            .ok_or(error::SheetError::GetFailed("video title".to_string()))?
             .inner_html();
         log::info!("Downloaded video title: {}", title);
         // Get video url
@@ -146,13 +131,10 @@ impl Sheet {
         let video_url = document
             .select(&selector)
             .nth(0) // Get first element
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Unable to get video url",
-            ))?
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?
             .value()
             .attr("src")
-            .unwrap();
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?;
         log::info!("Downloaded video url: {}", video_url);
         // Download video as a file
         let resp = reqwest::get(video_url).await?;
