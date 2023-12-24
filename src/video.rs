@@ -1,0 +1,86 @@
+use crate::error;
+use async_trait::async_trait;
+use std::io::Write;
+use thirtyfour::prelude::*;
+
+#[async_trait]
+pub trait VideoDownloader {
+    fn get_url(html: &scraper::Html) -> anyhow::Result<String>;
+    async fn download_video(url: String, path: String, timeout: u64) -> anyhow::Result<()>;
+}
+
+pub struct VideoDownloader20230525;
+impl VideoDownloader20230525 {
+    fn get_video_stream_from_qq(html: &String) -> anyhow::Result<(String, String)> {
+        let document = scraper::Html::parse_document(html);
+        // Get the video title
+        let selector =
+            scraper::Selector::parse("title").map_err(|_| error::SheetError::ParseFailed)?;
+        let title = document
+            .select(&selector)
+            .nth(0) // Get first element
+            .ok_or(error::SheetError::GetFailed("video title".to_string()))?
+            .inner_html();
+        log::info!("Downloaded video title: {}", title);
+        // Get video url
+        let selector =
+            scraper::Selector::parse("video").map_err(|_| error::SheetError::ParseFailed)?;
+        let video_url = document
+            .select(&selector)
+            .nth(0) // Get first element
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?
+            .value()
+            .attr("src")
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?;
+        log::info!("Downloaded video url: {}", video_url);
+        Ok((title, video_url.to_owned()))
+    }
+}
+
+#[async_trait]
+impl VideoDownloader for VideoDownloader20230525 {
+    fn get_url(document: &scraper::Html) -> anyhow::Result<String> {
+        let selector =
+            scraper::Selector::parse("iframe").map_err(|_| error::SheetError::ParseFailed)?;
+        let qq_url = document
+            .select(&selector)
+            .nth(0)
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?
+            .value()
+            .attr("data-src")
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?;
+        let re = regex::Regex::new(r"vid=([[:alnum:]]+)")?;
+        let vid = re
+            .captures(qq_url)
+            .ok_or(error::SheetError::GetFailed("video url".to_string()))?;
+        Ok(format!("https://v.qq.com/x/page/{}.html", &vid[1]))
+    }
+
+    async fn download_video(url: String, path: String, timeout: u64) -> anyhow::Result<()> {
+        // Send request via selenium
+        let caps = DesiredCapabilities::chrome();
+        let driver = WebDriver::new("http://localhost:9515", caps).await?;
+        //driver
+        //    .set_implicit_wait_timeout(Duration::new(timeout, 0))
+        //    .await?;
+        //let timeouts = driver.get_timeouts().await?;
+        match driver.goto(url).await {
+            Ok(_) => {}
+            Err(e) => {
+                log::info!("{:?}", e);
+                log::info!("You can ignore this meesage.")
+            }
+        }
+        // Waiting for selenium
+        std::thread::sleep(std::time::Duration::new(timeout, 0));
+        let html = driver.source().await?;
+        let (title, video_url) = VideoDownloader20230525::get_video_stream_from_qq(&html)?;
+        // Download video as a file
+        let resp = reqwest::get(video_url).await?;
+        let binary = resp.bytes().await?;
+        let mut file = std::fs::File::create(format!("{}/{}.mp4", path, title))?;
+        file.write_all(&binary)?;
+        driver.quit().await?;
+        Ok(())
+    }
+}
