@@ -1,5 +1,5 @@
-use crate::error;
-use crate::video::*;
+use crate::errors;
+use crate::video::{self, Dowloader};
 use std::io::Write;
 
 pub struct Sheet {
@@ -21,11 +21,11 @@ impl Sheet {
         // Get the title
         // Get the inner_html under h1
         let selector =
-            scraper::Selector::parse("h1").map_err(|_| error::SheetError::ParseFailed)?;
+            scraper::Selector::parse("h1").map_err(|_| errors::SheetError::ParseFailed)?;
         let mut title = document
             .select(&selector)
             .nth(0) // Get first element
-            .ok_or(error::SheetError::GetFailed("sheet title".to_string()))?
+            .ok_or(errors::SheetError::GetFailed("sheet title".to_string()))?
             .inner_html();
         title.retain(|c| !"\t\r\n".contains(c));
         let splits = title.trim().split('|').collect::<Vec<&str>>();
@@ -35,30 +35,30 @@ impl Sheet {
         // Get the accompaniment
         // Get the attr voice_encode_fileid of mpvoice
         let selector = scraper::Selector::parse("mp-common-mpaudio")
-            .map_err(|_| error::SheetError::ParseFailed)?;
+            .map_err(|_| errors::SheetError::ParseFailed)?;
         let voice_id = document
             .select(&selector)
             .nth(0)
-            .ok_or(error::SheetError::GetFailed(
+            .ok_or(errors::SheetError::GetFailed(
                 "accompaniment url".to_string(),
             ))?
             .value()
             .attr("voice_encode_fileid")
-            .ok_or(error::SheetError::GetFailed(
+            .ok_or(errors::SheetError::GetFailed(
                 "accompaniment url".to_string(),
             ))?;
-        let accompaniment = format!("https://res.wx.qq.com/voice/getvoice?mediaid={}", voice_id);
+        let accompaniment = format!("https://res.wx.qq.com/voice/getvoice?mediaid={voice_id}");
         log::info!("Parsed voice URL: {}", accompaniment);
 
         // Get the url of video
         // Get the attr data-src of iframe
-        let video = VideoDownloader20230525::get_url(&document)?;
+        let video = video::Dowloader20230525::get_url(&document)?;
         log::info!("Parsed QQ video URL: {}", video);
 
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
         let selector =
-            scraper::Selector::parse("img").map_err(|_| error::SheetError::ParseFailed)?;
+            scraper::Selector::parse("img").map_err(|_| errors::SheetError::ParseFailed)?;
         let imgs = document.select(&selector).filter(|x| {
             x.value()
                 .attr("class")
@@ -66,11 +66,12 @@ impl Sheet {
                 .contains("js_insertlocalimg")
         });
         let sheets = imgs
-            .map(|img| match img.value().attr("data-src") {
-                Some(src) => src.to_string(),
-                None => {
+            .map(|img| {
+                if let Some(src) = img.value().attr("data-src") {
+                    src.to_string()
+                } else {
                     log::warn!("Unabel to get sheet url");
-                    "".to_owned()
+                    String::new()
                 }
             })
             .collect::<Vec<String>>();
@@ -93,7 +94,7 @@ impl Sheet {
         // Create README
         {
             log::info!("Creating README...");
-            let mut file = std::fs::File::create(format!("{}/README", path))?;
+            let mut file = std::fs::File::create(format!("{path}/README"))?;
             file.write_all(self.url.as_bytes())?;
         }
 
@@ -102,7 +103,7 @@ impl Sheet {
             log::info!("Dowloading accompaniment...");
             let resp = reqwest::get(self.accompaniment.clone()).await?;
             let binary = resp.bytes().await?;
-            let mut file = std::fs::File::create(format!("{}/伴奏.mp3", path))?;
+            let mut file = std::fs::File::create(format!("{path}/伴奏.mp3"))?;
             file.write_all(&binary)?;
         }
 
@@ -121,7 +122,7 @@ impl Sheet {
         {
             log::info!("Dowloading video...");
             // Timeout means we need to wait for ad play and load the video we want
-            VideoDownloader20230525::download_video(self.video.clone(), path.clone(), 30).await?;
+            video::Dowloader20230525::download_video(self.video.clone(), path.clone(), 30).await?;
         }
 
         Ok(())

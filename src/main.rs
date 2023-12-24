@@ -1,4 +1,4 @@
-mod error;
+mod errors;
 mod sheet;
 mod video;
 
@@ -26,7 +26,7 @@ async fn main() -> anyhow::Result<()> {
         };
         // Download the resource
         match sheet.download(OUTPUT).await {
-            Ok(_) => {}
+            Ok(()) => {}
             Err(e) => {
                 log::warn!("Failed to download sheet: {:?}", e);
                 failed_url.push(url);
@@ -35,10 +35,10 @@ async fn main() -> anyhow::Result<()> {
         }
     }
     log::info!("-----------------------------------------------------------------------------------------------");
-    if failed_url.len() != 0 {
-        log::warn!("Something wrong! Failure urls: {:?}", failed_url);
-    } else {
+    if failed_url.is_empty() {
         log::info!("Complete successfully!");
+    } else {
+        log::warn!("Something wrong! Failure urls: {:?}", failed_url);
     }
     Ok(())
 }
