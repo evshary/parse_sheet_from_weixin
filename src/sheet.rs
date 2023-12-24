@@ -51,9 +51,11 @@ impl Sheet {
         log::info!("Parsed voice URL: {}", accompaniment);
 
         // Get the url of video
-        // Get the attr data-src of iframe
-        let video = video::Downloader20230525::get_url(&document)?;
-        log::info!("Parsed QQ video URL: {}", video);
+        let mut video = video::Downloader20231224::get_url(&document)?;
+        if video.is_empty() {
+            video = url.clone();
+        }
+        log::info!("Parsed video URL: {}", video);
 
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
@@ -122,7 +124,13 @@ impl Sheet {
         {
             log::info!("Dowloading video...");
             // Timeout means we need to wait for ad play and load the video we want
-            video::Downloader20230525::download_video(self.video.clone(), path.clone(), 30).await?;
+            video::Downloader20231224::download_video(
+                self.title.clone(),
+                self.video.clone(),
+                path.clone(),
+                5,
+            )
+            .await?;
         }
 
         Ok(())
