@@ -1,5 +1,5 @@
 use crate::errors;
-use crate::video::{self, Dowloader};
+use crate::video::{self, Downloader};
 use std::io::Write;
 
 pub struct Sheet {
@@ -52,7 +52,7 @@ impl Sheet {
 
         // Get the url of video
         // Get the attr data-src of iframe
-        let video = video::Dowloader20230525::get_url(&document)?;
+        let video = video::Downloader20230525::get_url(&document)?;
         log::info!("Parsed QQ video URL: {}", video);
 
         // Get the music sheet
@@ -122,7 +122,7 @@ impl Sheet {
         {
             log::info!("Dowloading video...");
             // Timeout means we need to wait for ad play and load the video we want
-            video::Dowloader20230525::download_video(self.video.clone(), path.clone(), 30).await?;
+            video::Downloader20230525::download_video(self.video.clone(), path.clone(), 30).await?;
         }
 
         Ok(())
