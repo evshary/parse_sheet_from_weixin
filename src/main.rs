@@ -10,15 +10,19 @@ async fn main() -> anyhow::Result<()> {
     let file_content = std::fs::read_to_string("urls.txt")?;
     let urls = file_content.split('\n');
     let mut failed_url = Vec::<&str>::new();
+
     for url in urls {
         // Ignore empty line
         if url.is_empty() {
             continue;
         }
+
         // Add newline to separate
         log::info!("-----------------------------------------------------------------------------------------------");
+
         // Don't access the website too fast
         std::thread::sleep(std::time::Duration::new(5, 0));
+
         // Parse the resource
         let sheet = match sheet::Sheet::try_new(url.to_string()).await {
             Ok(s) => s,
@@ -28,6 +32,7 @@ async fn main() -> anyhow::Result<()> {
                 continue;
             }
         };
+
         // Download the resource
         match sheet.download(OUTPUT).await {
             Ok(()) => {}
@@ -38,7 +43,9 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
+
     log::info!("-----------------------------------------------------------------------------------------------");
+
     if failed_url.is_empty() {
         log::info!("Complete successfully!");
     } else {
