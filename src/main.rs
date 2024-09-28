@@ -2,12 +2,13 @@ mod errors;
 mod sheet;
 mod video;
 
-const OUTPUT: &str = "output";
+const URLS_FILE: &str = "urls.txt";
+const OUTPUT_FOLDER: &str = "output";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
-    let file_content = std::fs::read_to_string("urls.txt")?;
+    let file_content = std::fs::read_to_string(URLS_FILE)?;
     let urls = file_content.split('\n');
     let mut failed_url = Vec::<&str>::new();
 
@@ -34,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
         };
 
         // Download the resource
-        match sheet.download(OUTPUT).await {
+        match sheet.download(OUTPUT_FOLDER).await {
             Ok(()) => {}
             Err(e) => {
                 log::warn!("Failed to download sheet: {:?}", e);

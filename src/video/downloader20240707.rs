@@ -5,6 +5,8 @@ use std::io::Write;
 use std::sync::Mutex;
 use thirtyfour::prelude::*;
 
+const QQ_URLS_FILE: &str = "qq_urls.txt";
+
 static VIDEO_IDX: Mutex<usize> = Mutex::new(0);
 
 pub struct Downloader20240707;
@@ -38,7 +40,7 @@ impl Downloader20240707 {
 #[async_trait]
 impl Downloader for Downloader20240707 {
     fn get_url(_document: &scraper::Html) -> anyhow::Result<String> {
-        let file_content = std::fs::read_to_string("qq_urls.txt")?;
+        let file_content = std::fs::read_to_string(QQ_URLS_FILE)?;
         let urls = file_content.split('\n').collect::<Vec<_>>();
 
         let mut global_idx = VIDEO_IDX.lock().unwrap();
