@@ -54,7 +54,7 @@ impl Sheet {
         log::info!("Parsed voice URL: {}", accompaniment);
 
         // Get the url of video
-        let mut video = video::Downloader20240707::get_url(&document)?;
+        let mut video = video::Downloader20241215::get_url(&document)?;
         if video.is_empty() {
             video.clone_from(&url);
         }
