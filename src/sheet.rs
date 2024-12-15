@@ -56,7 +56,7 @@ impl Sheet {
         // Get the url of video
         let mut video = video::Downloader20240707::get_url(&document)?;
         if video.is_empty() {
-            video = url.clone();
+            video.clone_from(&url);
         }
         log::info!("Parsed video URL: {}", video);
 
