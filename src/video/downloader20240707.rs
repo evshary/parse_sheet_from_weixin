@@ -1,9 +1,9 @@
-use crate::errors;
-use crate::video::Downloader;
+use std::{io::Write, sync::Mutex};
+
 use async_trait::async_trait;
-use std::io::Write;
-use std::sync::Mutex;
 use thirtyfour::prelude::*;
+
+use crate::{errors, video::Downloader};
 
 const QQ_URLS_FILE: &str = "qq_urls.txt";
 

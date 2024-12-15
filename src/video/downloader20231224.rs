@@ -1,8 +1,9 @@
-use crate::errors;
-use crate::video::Downloader;
-use async_trait::async_trait;
 use std::io::Write;
+
+use async_trait::async_trait;
 use thirtyfour::prelude::*;
+
+use crate::{errors, video::Downloader};
 
 pub struct Downloader20231224;
 impl Downloader20231224 {

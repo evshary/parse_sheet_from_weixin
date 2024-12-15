@@ -1,6 +1,9 @@
-use crate::errors;
-use crate::video::{self, Downloader};
 use std::io::Write;
+
+use crate::{
+    errors,
+    video::{self, Downloader},
+};
 
 pub struct Sheet {
     url: String,
