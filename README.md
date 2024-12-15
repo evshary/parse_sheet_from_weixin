@@ -10,6 +10,7 @@ The program can parse the music sheet from weixin.
 * Create `urls.txt` and put urls into it
 * Create `qq_urls.txt` and put the QQ link inside
   * You need to find the corresponding link [here](https://v.qq.com/biu/creator/home?vcuid=9000001247)
+  * The bilibili link [here](https://space.bilibili.com/388464704)
 * Run
 
 ```shell
