@@ -40,7 +40,6 @@ async fn main() -> anyhow::Result<()> {
             Err(e) => {
                 log::warn!("Failed to download sheet: {:?}", e);
                 failed_url.push(url);
-                continue;
             }
         }
     }
