@@ -6,7 +6,7 @@ pub struct Sheet {
     url: String,
     title: String,
     accompaniment: String,
-    video: String,
+    video: Option<String>,
     sheets: Vec<String>,
 }
 
@@ -71,12 +71,10 @@ impl Sheet {
         let video = document
             .select(&selector)
             .nth(0)
-            .ok_or(errors::SheetError::GetFailed("video url".to_string()))?
-            .value()
-            .attr("src")
-            .ok_or(errors::SheetError::GetFailed("video url".to_string()))?
-            .to_string();
-        log::info!("Parsed video URL: {}", video);
+            .map(|e| e.value().attr("src"))
+            .flatten()
+            .map(String::from);
+        log::info!("Parsed video URL: {:?}", video);
 
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
@@ -144,11 +142,15 @@ impl Sheet {
         // Download video
         {
             log::info!("Dowloading video...");
-            // Download video as a file
-            let resp = reqwest::get(self.video.clone()).await?;
-            let binary = resp.bytes().await?;
-            let mut file = std::fs::File::create(format!("{path}/{}.mp4", self.title))?;
-            file.write_all(&binary)?;
+            if let Some(video) = self.video.clone() {
+                // Download video as a file
+                let resp = reqwest::get(video).await?;
+                let binary = resp.bytes().await?;
+                let mut file = std::fs::File::create(format!("{path}/{}.mp4", self.title))?;
+                file.write_all(&binary)?;
+            } else {
+                return Err(errors::SheetError::GetFailed("video url".to_string()).into());
+            }
         }
 
         Ok(())
