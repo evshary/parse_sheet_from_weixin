@@ -1,9 +1,6 @@
 use std::io::Write;
 
-use crate::{
-    errors,
-    video::{self, Downloader},
-};
+use crate::errors;
 
 pub struct Sheet {
     url: String,
@@ -13,12 +10,27 @@ pub struct Sheet {
     sheets: Vec<String>,
 }
 
+use thirtyfour::prelude::*;
+
 impl Sheet {
     pub async fn try_new(url: String) -> anyhow::Result<Sheet> {
-        // Get Html
         log::info!("The URL: {}", url);
-        let resp = reqwest::get(url.clone()).await?;
-        let html = resp.text().await?;
+
+        // Use firefox to load the URL
+        let caps = DesiredCapabilities::firefox();
+        let driver = WebDriver::new("http://localhost:4444", caps).await?;
+        match driver.goto(&url).await {
+            Ok(()) => {}
+            Err(e) => {
+                log::info!("{:?}", e);
+                log::info!("You can ignore this meesage.");
+            }
+        }
+        // Waiting for selenium
+        std::thread::sleep(std::time::Duration::new(10, 0));
+
+        // Get the HTML
+        let html = driver.source().await?;
         let document = scraper::Html::parse_document(&html);
 
         // Get the title
@@ -54,10 +66,16 @@ impl Sheet {
         log::info!("Parsed voice URL: {}", accompaniment);
 
         // Get the url of video
-        let mut video = video::Downloader20241215::get_url(&document)?;
-        if video.is_empty() {
-            video.clone_from(&url);
-        }
+        let selector =
+            scraper::Selector::parse("video").map_err(|_| errors::SheetError::ParseFailed)?;
+        let video = document
+            .select(&selector)
+            .nth(0)
+            .ok_or(errors::SheetError::GetFailed("video url".to_string()))?
+            .value()
+            .attr("src")
+            .ok_or(errors::SheetError::GetFailed("video url".to_string()))?
+            .to_string();
         log::info!("Parsed video URL: {}", video);
 
         // Get the music sheet
@@ -126,14 +144,11 @@ impl Sheet {
         // Download video
         {
             log::info!("Dowloading video...");
-            // Timeout means we need to wait for ad play and load the video we want
-            video::Downloader20231224::download_video(
-                self.title.clone(),
-                self.video.clone(),
-                path.clone(),
-                5,
-            )
-            .await?;
+            // Download video as a file
+            let resp = reqwest::get(self.video.clone()).await?;
+            let binary = resp.bytes().await?;
+            let mut file = std::fs::File::create(format!("{path}/{}.mp4", self.title))?;
+            file.write_all(&binary)?;
         }
 
         Ok(())
