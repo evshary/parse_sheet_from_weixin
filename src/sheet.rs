@@ -71,8 +71,7 @@ impl Sheet {
         let video = document
             .select(&selector)
             .nth(0)
-            .map(|e| e.value().attr("src"))
-            .flatten()
+            .and_then(|e| e.value().attr("src"))
             .map(String::from);
         log::info!("Parsed video URL: {:?}", video);
 
