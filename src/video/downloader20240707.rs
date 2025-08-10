@@ -5,12 +5,16 @@ use thirtyfour::prelude::*;
 
 use crate::{errors, video::Downloader};
 
+#[allow(dead_code)]
 const QQ_URLS_FILE: &str = "qq_urls.txt";
 
+#[allow(dead_code)]
 static VIDEO_IDX: Mutex<usize> = Mutex::new(0);
 
+#[allow(dead_code)]
 pub struct Downloader20240707;
 impl Downloader20240707 {
+    #[allow(dead_code)]
     fn get_video_stream_from_qq(html: &str) -> anyhow::Result<(String, String)> {
         let document = scraper::Html::parse_document(html);
         // Get the video title

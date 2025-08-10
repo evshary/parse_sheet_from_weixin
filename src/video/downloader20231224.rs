@@ -5,8 +5,10 @@ use thirtyfour::prelude::*;
 
 use crate::{errors, video::Downloader};
 
+#[allow(dead_code)]
 pub struct Downloader20231224;
 impl Downloader20231224 {
+    #[allow(dead_code)]
     fn get_video_stream(html: &str) -> anyhow::Result<String> {
         let document = scraper::Html::parse_document(html);
 
