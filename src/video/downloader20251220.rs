@@ -35,12 +35,11 @@ impl Downloader for Downloader20251220 {
         path: String,
         _timeout: u64,
     ) -> anyhow::Result<()> {
-        let output = format!("{path}");
         let status = Command::new("yt-dlp")
             .arg("-f")
             .arg("bestvideo+bestaudio")
             .arg("-P")
-            .arg(output)
+            .arg(path)
             .arg(url)
             .status()?;
         if !status.success() {
