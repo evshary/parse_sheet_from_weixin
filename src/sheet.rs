@@ -16,7 +16,7 @@ pub struct Sheet {
 use thirtyfour::prelude::*;
 
 impl Sheet {
-    pub async fn try_new(url: String) -> anyhow::Result<Sheet> {
+    pub async fn try_new(url: String, index: usize) -> anyhow::Result<Sheet> {
         log::info!("The URL: {url}");
 
         // Use firefox to load the URL
@@ -69,7 +69,7 @@ impl Sheet {
         log::info!("Parsed voice URL: {accompaniment}");
 
         // Get the url of video
-        let video = Downloader20251220::get_url(&document).ok();
+        let video = Downloader20251220::get_url_by_index(index).ok();
         log::info!("Parsed video URL: {video:?}");
 
         // Get the music sheet
@@ -87,7 +87,7 @@ impl Sheet {
                 if let Some(src) = img.value().attr("data-src") {
                     src.to_string()
                 } else {
-                    log::warn!("Unabel to get sheet url");
+                    log::error!("Unabel to get sheet url");
                     String::new()
                 }
             })

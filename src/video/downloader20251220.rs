@@ -13,29 +13,33 @@ static VIDEO_IDX: Mutex<usize> = Mutex::new(0);
 #[allow(dead_code)]
 pub struct Downloader20251220;
 
+impl Downloader20251220 {
+    pub fn get_url_by_index(index: usize) -> anyhow::Result<String> {
+        let file_content = std::fs::read_to_string(URLS_FILE)?;
+        let urls = file_content.split('\n').collect::<Vec<_>>();
+        urls.get(index)
+            .map(std::string::ToString::to_string)
+            .ok_or_else(|| anyhow::anyhow!("Index out of bound"))
+    }
+}
+
 #[async_trait]
 impl Downloader for Downloader20251220 {
     fn get_url(_document: &scraper::Html) -> anyhow::Result<String> {
-        let file_content = std::fs::read_to_string(URLS_FILE)?;
-        let urls = file_content.split('\n').collect::<Vec<_>>();
-
-        let mut global_idx = VIDEO_IDX.lock().unwrap();
-        let idx = *global_idx;
-        *global_idx += 1;
-        Ok(urls[idx].to_string())
+        Err(anyhow::anyhow!("Use get_url_by_index instead"))
     }
 
     async fn download_video(
-        title: String,
+        _title: String,
         url: String,
         path: String,
         _timeout: u64,
     ) -> anyhow::Result<()> {
-        let output = format!("{path}/{title}.%(ext)s");
+        let output = format!("{path}");
         let status = Command::new("yt-dlp")
             .arg("-f")
             .arg("bestvideo+bestaudio")
-            .arg("-o")
+            .arg("-P")
             .arg(output)
             .arg(url)
             .status()?;

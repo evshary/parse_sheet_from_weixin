@@ -11,12 +11,16 @@ async fn main() -> anyhow::Result<()> {
     let file_content = std::fs::read_to_string(URLS_FILE)?;
     let urls = file_content.split('\n');
     let mut failed_url = Vec::<&str>::new();
+    let mut video_idx = 0;
 
     for url in urls {
         // Ignore empty line
         if url.is_empty() {
             continue;
         }
+
+        let current_idx = video_idx;
+        video_idx += 1;
 
         // Add newline to separate
         log::info!("-----------------------------------------------------------------------------------------------");
@@ -25,10 +29,10 @@ async fn main() -> anyhow::Result<()> {
         std::thread::sleep(std::time::Duration::new(5, 0));
 
         // Parse the resource
-        let sheet = match sheet::Sheet::try_new(url.to_string()).await {
+        let sheet = match sheet::Sheet::try_new(url.to_string(), current_idx).await {
             Ok(s) => s,
             Err(e) => {
-                log::warn!("Failed to parse sheet: {e:?}");
+                log::error!("Failed to parse sheet: {e:?}");
                 failed_url.push(url);
                 continue;
             }
@@ -38,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
         match sheet.download(OUTPUT_FOLDER).await {
             Ok(()) => {}
             Err(e) => {
-                log::warn!("Failed to download sheet: {e:?}");
+                log::error!("Failed to download sheet: {e:?}");
                 failed_url.push(url);
             }
         }
@@ -49,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
     if failed_url.is_empty() {
         log::info!("Complete successfully!");
     } else {
-        log::warn!("Something wrong! Failure urls: {failed_url:?}");
+        log::error!("Something wrong! Failure urls: {failed_url:?}");
     }
     Ok(())
 }
