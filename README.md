@@ -6,6 +6,7 @@ The program can parse the music sheet from weixin.
 
 * Run the geckodriver inside snap: `/snap/bin/geckodriver`
 * Create `urls.txt` and put urls into it
+* Create `bilibili_urls.txt` and put [the corressponding bilibili urls](https://space.bilibili.com/388464704/upload/video) into it
 * Run
 
 ```shell

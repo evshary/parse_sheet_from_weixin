@@ -2,6 +2,7 @@ pub mod downloader20230525;
 pub mod downloader20231224;
 pub mod downloader20240707;
 pub mod downloader20241215;
+pub mod downloader20251220;
 
 use async_trait::async_trait;
 #[allow(unused_imports)]
@@ -12,6 +13,8 @@ pub use downloader20231224::Downloader20231224;
 pub use downloader20240707::Downloader20240707;
 #[allow(unused_imports)]
 pub use downloader20241215::Downloader20241215;
+#[allow(unused_imports)]
+pub use downloader20251220::Downloader20251220;
 
 #[allow(dead_code)]
 #[async_trait]

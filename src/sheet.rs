@@ -1,6 +1,9 @@
 use std::io::Write;
 
-use crate::errors;
+use crate::{
+    errors,
+    video::{Downloader, Downloader20251220},
+};
 
 pub struct Sheet {
     url: String,
@@ -66,13 +69,7 @@ impl Sheet {
         log::info!("Parsed voice URL: {}", accompaniment);
 
         // Get the url of video
-        let selector =
-            scraper::Selector::parse("video").map_err(|_| errors::SheetError::ParseFailed)?;
-        let video = document
-            .select(&selector)
-            .nth(0)
-            .and_then(|e| e.value().attr("src"))
-            .map(String::from);
+        let video = Downloader20251220::get_url(&document).ok();
         log::info!("Parsed video URL: {:?}", video);
 
         // Get the music sheet
@@ -143,10 +140,7 @@ impl Sheet {
             log::info!("Dowloading video...");
             if let Some(video) = self.video.clone() {
                 // Download video as a file
-                let resp = reqwest::get(video).await?;
-                let binary = resp.bytes().await?;
-                let mut file = std::fs::File::create(format!("{path}/{}.mp4", self.title))?;
-                file.write_all(&binary)?;
+                Downloader20251220::download_video(self.title.clone(), video, path, 0).await?;
             } else {
                 return Err(errors::SheetError::GetFailed("video url".to_string()).into());
             }
