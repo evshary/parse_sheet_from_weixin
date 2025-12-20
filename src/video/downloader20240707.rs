@@ -25,7 +25,7 @@ impl Downloader20240707 {
             .nth(0) // Get first element
             .ok_or(errors::SheetError::GetFailed("video title".to_string()))?
             .inner_html();
-        log::info!("Downloaded video title: {}", title);
+        log::info!("Downloaded video title: {title}");
         // Get video url
         let selector =
             scraper::Selector::parse("video").map_err(|_| errors::SheetError::ParseFailed)?;
@@ -36,7 +36,7 @@ impl Downloader20240707 {
             .value()
             .attr("src")
             .ok_or(errors::SheetError::GetFailed("video url".to_string()))?;
-        log::info!("Downloaded video url: {}", video_url);
+        log::info!("Downloaded video url: {video_url}");
         Ok((title, video_url.to_owned()))
     }
 }
@@ -69,7 +69,7 @@ impl Downloader for Downloader20240707 {
         match driver.goto(url).await {
             Ok(()) => {}
             Err(e) => {
-                log::info!("{:?}", e);
+                log::info!("{e:?}");
                 log::info!("You can ignore this meesage.");
             }
         }

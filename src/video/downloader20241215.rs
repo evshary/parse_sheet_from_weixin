@@ -44,7 +44,7 @@ impl Downloader for Downloader20241215 {
         match driver.goto(url).await {
             Ok(()) => {}
             Err(e) => {
-                log::info!("{:?}", e);
+                log::info!("{e:?}");
                 log::info!("You can ignore this meesage.");
             }
         }
@@ -52,7 +52,7 @@ impl Downloader for Downloader20241215 {
         std::thread::sleep(std::time::Duration::new(timeout, 0));
         let html = driver.source().await?;
         let video_url = Downloader20241215::get_video_stream(&html)?;
-        log::info!("Video stream url: {}", video_url);
+        log::info!("Video stream url: {video_url}");
         // Download video as a file
         let resp = reqwest::get(video_url).await?;
         let binary = resp.bytes().await?;

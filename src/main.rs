@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
         let sheet = match sheet::Sheet::try_new(url.to_string()).await {
             Ok(s) => s,
             Err(e) => {
-                log::warn!("Failed to parse sheet: {:?}", e);
+                log::warn!("Failed to parse sheet: {e:?}");
                 failed_url.push(url);
                 continue;
             }
@@ -38,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
         match sheet.download(OUTPUT_FOLDER).await {
             Ok(()) => {}
             Err(e) => {
-                log::warn!("Failed to download sheet: {:?}", e);
+                log::warn!("Failed to download sheet: {e:?}");
                 failed_url.push(url);
             }
         }
@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
     if failed_url.is_empty() {
         log::info!("Complete successfully!");
     } else {
-        log::warn!("Something wrong! Failure urls: {:?}", failed_url);
+        log::warn!("Something wrong! Failure urls: {failed_url:?}");
     }
     Ok(())
 }

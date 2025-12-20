@@ -17,7 +17,7 @@ use thirtyfour::prelude::*;
 
 impl Sheet {
     pub async fn try_new(url: String) -> anyhow::Result<Sheet> {
-        log::info!("The URL: {}", url);
+        log::info!("The URL: {url}");
 
         // Use firefox to load the URL
         let caps = DesiredCapabilities::firefox();
@@ -25,7 +25,7 @@ impl Sheet {
         match driver.goto(&url).await {
             Ok(()) => {}
             Err(e) => {
-                log::info!("{:?}", e);
+                log::info!("{e:?}");
                 log::info!("You can ignore this meesage.");
             }
         }
@@ -48,7 +48,7 @@ impl Sheet {
         title.retain(|c| !"\t\r\n".contains(c));
         let splits = title.trim().split('|').collect::<Vec<&str>>();
         let title = String::from(splits[1]) + " - " + splits[0];
-        log::info!("Parsed title: {}", title);
+        log::info!("Parsed title: {title}");
 
         // Get the accompaniment
         // Get the attr voice_encode_fileid of mpvoice
@@ -66,11 +66,11 @@ impl Sheet {
                 "accompaniment url".to_string(),
             ))?;
         let accompaniment = format!("https://res.wx.qq.com/voice/getvoice?mediaid={voice_id}");
-        log::info!("Parsed voice URL: {}", accompaniment);
+        log::info!("Parsed voice URL: {accompaniment}");
 
         // Get the url of video
         let video = Downloader20251220::get_url(&document).ok();
-        log::info!("Parsed video URL: {:?}", video);
+        log::info!("Parsed video URL: {video:?}");
 
         // Get the music sheet
         // Get the attr data-src of img with class js_insertlocalimg
@@ -92,7 +92,7 @@ impl Sheet {
                 }
             })
             .collect::<Vec<String>>();
-        log::info!("Parsed sheet URL: {:?}", sheets);
+        log::info!("Parsed sheet URL: {sheets:?}");
         Ok(Sheet {
             url,
             title,

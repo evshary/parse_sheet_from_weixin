@@ -31,7 +31,7 @@ impl Downloader for Downloader20251220 {
         path: String,
         _timeout: u64,
     ) -> anyhow::Result<()> {
-        let output = format!("{}/{}.%(ext)s", path, title);
+        let output = format!("{path}/{title}.%(ext)s");
         let status = Command::new("yt-dlp")
             .arg("-f")
             .arg("bestvideo+bestaudio")
