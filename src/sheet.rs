@@ -29,8 +29,7 @@ impl Sheet {
 
     fn is_likely_sheet_png(binary: &[u8]) -> bool {
         Self::get_png_dimensions(binary)
-            .map(|(width, height)| width >= 500 && height >= 500)
-            .unwrap_or(false)
+            .is_some_and(|(width, height)| width >= 500 && height >= 500)
     }
 
     fn get_image_url(img: scraper::element_ref::ElementRef<'_>) -> Option<String> {
@@ -170,7 +169,7 @@ impl Sheet {
                     log::info!("Skipping non-sheet image candidate");
                     continue;
                 }
-                let mut file = std::fs::File::create(format!("{}/{}.png", path, saved_idx))?;
+                let mut file = std::fs::File::create(format!("{path}/{saved_idx}.png"))?;
                 file.write_all(&binary)?;
                 saved_idx += 1;
             }
