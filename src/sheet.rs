@@ -118,9 +118,8 @@ impl Sheet {
         // Weixin article images do not always use the same class/attribute combination.
         // Prefer images inside the article body, and fall back to any image-like nodes
         // that expose a network URL.
-        let selector =
-            scraper::Selector::parse("#js_content img, .rich_media_content img, img")
-                .map_err(|_| errors::SheetError::ParseFailed)?;
+        let selector = scraper::Selector::parse("#js_content img, .rich_media_content img, img")
+            .map_err(|_| errors::SheetError::ParseFailed)?;
         let mut seen = std::collections::HashSet::new();
         let sheets = document
             .select(&selector)
