@@ -1,3 +1,6 @@
 target
 output
 *.txt
+
+# AI-related
+.codex
