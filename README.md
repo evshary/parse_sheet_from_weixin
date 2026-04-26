@@ -15,3 +15,7 @@ The program can parse the music sheet from weixin.
 # Terminal 2: Run this program
 RUST_LOG=info cargo run
 ```
+
+## For developers
+
+Remember to run `pre-commit install --install-hooks` to ensure every commit follows the rules.

@@ -12,3 +12,18 @@ repos:
     rev: v0.41.0
     hooks:
     - id: markdownlint
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt-check
+        name: cargo fmt --check
+        entry: cargo fmt --check -- --config unstable_features=true,imports_granularity=Crate,group_imports=StdExternalCrate
+        language: system
+        pass_filenames: false
+        types_or: [rust]
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy --all-targets --all-features -- -W warnings -D warnings
+        language: system
+        pass_filenames: false
+        types_or: [rust]
